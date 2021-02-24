@@ -1,6 +1,6 @@
 Package: gbm.auto
 Title: Automated Boosted Regression Tree Modelling and Mapping Suite
-Version: 1.4.0
+Version: 1.4.1
 Authors@R: c(
     person("Simon", "Dedman", email = "simondedman@gmail.com", role = c("aut", "cre")),
     person("Hans", "Gerritsen", role = "aut"))
@@ -27,9 +27,9 @@ Imports: gbm (>= 2.1.1), dismo (>= 1.0-15), beepr (>= 1.2), mapplots
         stats (>= 3.3.1)
 RoxygenNote: 7.1.1
 NeedsCompilation: no
-Packaged: 2021-02-11 22:02:25 UTC; simon
+Packaged: 2021-02-23 23:05:11 UTC; simon
 Author: Simon Dedman [aut, cre],
   Hans Gerritsen [aut]
 Maintainer: Simon Dedman <simondedman@gmail.com>
 Repository: CRAN
-Date/Publication: 2021-02-15 16:50:02 UTC
+Date/Publication: 2021-02-24 05:50:02 UTC
