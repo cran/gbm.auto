@@ -392,19 +392,14 @@ gbm.auto <- function(
     brvcol <- which(colnames(samples) == "brv") # brv column number for BRT
 
     # create logged response variable, for gaussian BRTs when data are zero-inflated (otherwise just use resvar directly)
-    logem <- log(samples[,i]) # logs resvar i.e. containing zeroes
+    logem <- log1p(samples[,i]) # logs resvar i.e. containing zeroes
     dont  <- samples[,i]
     if (fam1 == "bernoulli" & (!gaus | (gaus & ZI))) {samples$grv <- logem} else {samples$grv <- dont} # do fam1 runs if it's bin only (fam1 bin, gaus (ie fam2) false), or if it's delta & ZI
     grvcol <- which(colnames(samples) == "grv") # grv column number for BRT
-    grv_yes <- subset(samples, grv >= 0) # nonzero subset for gaussian BRTs
-    # actually not nonzero but 'not -Inf' since zeroes logged to "-Inf"
-    # Change this to grv_yes <- samples if using a hurdle model including zeroes
-    # need to keep it as log1p in that case?
-    # ">=" same as just ">" since any nonzero in samples will be logged to a
-    # nonzero & any 0 will be logged to -Inf so there'll be no zeroes
+    grv_yes <- subset(samples, grv > 0) # nonzero subset for gaussian BRTs
 
     if (is.null(loadgbm)) { #if loadgbm is NULL i.e. you're running BRTs not
-      # predicting from existing models. Skip to L1302
+      # predicting from existing models. Skip to L1404
 
       ####3. Begin Report####
       if (fam1 == "bernoulli" & (!gaus | (gaus & ZI))) { # do fam1 runs if it's bin only (fam1 bin, gaus (ie fam2) false), or if it's delta & ZI
@@ -498,11 +493,11 @@ gbm.auto <- function(
 
               ####6. Add bin stats to report####
               if (fam1 == "bernoulli" & (!gaus | (gaus & ZI))) {Report[1:6,(3 + n)] <- c(paste0("trees: ",get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$n.trees),
-                                                                                                                 paste0("Training Data Correlation: ",get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$self.statistics$correlation[[1]]),
-                                                                                                                 paste0("CV Mean Deviance: ",get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$cv.statistics$deviance.mean),
-                                                                                                                 paste0("CV Deviance SE: ",get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$cv.statistics$deviance.se),
-                                                                                                                 paste0("CV Mean Correlation: ",get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$cv.statistics$correlation.mean),
-                                                                                                                 paste0("CV Correlation SE: ",get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$cv.statistics$correlation.se))
+                                                                                         paste0("Training Data Correlation: ", get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$self.statistics$correlation[[1]]),
+                                                                                         paste0("CV Mean Deviance: ", get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$cv.statistics$deviance.mean),
+                                                                                         paste0("CV Deviance SE: ", get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$cv.statistics$deviance.se),
+                                                                                         paste0("CV Mean Correlation: ", get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$cv.statistics$correlation.mean),
+                                                                                         paste0("CV Correlation SE: ", get(paste0("Bin_BRT",".tc",j,".lr",k,".bf",l))$cv.statistics$correlation.se))
               # bin BRT name
               colnames(Report)[3 + n] <- paste0("Bin_BRT",".tc",j,".lr",k,".bf",l)
               } # close ZI if
@@ -1032,6 +1027,8 @@ gbm.auto <- function(
       } # close gaus if
 
       write.csv(Report, row.names = FALSE, na = "", file = paste0("./", names(samples[i]), "/Report.csv"))
+      if (alerts) beep(2) # progress printer, right aligned for visibility
+      print(paste0("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX     Report CSV written      XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"))
 
       #18. Machine learning evaluation metrics####
       if (MLEvaluate) { # if user wants ML evaluation
@@ -1396,8 +1393,6 @@ gbm.auto <- function(
         print(paste0("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Evaluation Metrics ProcessedXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"))
       } # close if MLEvaluate
 
-      if (alerts) beep(2) # progress printer, right aligned for visibility
-      print(paste0("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX     Report CSV written      XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"))
     } # close loadgbm isnull
 
     #avoid sections 19-25 if not predicting to grids
@@ -1439,7 +1434,8 @@ gbm.auto <- function(
           grids$Gaus_Preds <- Gaus_Preds
 
           ####21. Backtransform logged Gaus to unlogged####
-          grids$Gaus_Preds_Unlog <- exp(Gaus_Preds + 1/2 * sd(get(Gaus_Best_Model)$residuals, na.rm = FALSE) ^ 2)
+          grids$Gaus_Preds_Unlog <- expm1(Gaus_Preds + 1/2 * sd(get(Gaus_Best_Model)$residuals, na.rm = FALSE) ^ 2)
+          # exp for log, expm1 for log1p, L395
 
           ####22. BIN*positive abundance = final abundance####
           grids$PredAbund <- grids$Gaus_Preds_Unlog * grids$Bin_Preds
