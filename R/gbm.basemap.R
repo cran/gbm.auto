@@ -22,7 +22,8 @@
 #' intermediate, high, full) or "CALC" to calculate based on bounds. Choose one.
 #' @param extrabounds Grow bounds 16pct each direction to expand rectangular
 #' datasets basemaps over the entire square area created by basemap in mapplots.
-
+#' @param returnsf Return object as simple features object? Default FALSE,
+#'  returns as list format for draw.shape in mapplots, used in gbm.map.
 #'
 #' @return basemap coastline file for gbm.map in gbm.auto. "cropshp"
 #' SpatialPolygonsDataFrame in in local environment & user-named files in
@@ -30,14 +31,10 @@
 #' MyMap <- readShapePoly("./CroppedMap/Crop_Map")
 #'
 #' @export
-#' @import rgeos
 #' @import shapefiles
-#' @importFrom rgdal readOGR
-#' @importFrom maptools writeSpatialShape
-#' @importFrom raster crop
 #' @importFrom graphics lines par
 #' @importFrom utils download.file unzip
-#' @importFrom sf st_crop st_read st_write
+#' @importFrom sf st_crop st_read st_write sf_use_s2
 #' @author Simon Dedman, \email{simondedman@@gmail.com}
 #' @examples
 #' \donttest{
@@ -56,16 +53,15 @@
 #' in the correct directory relative to it. This error means it looked for the
 #' folder and couldn't find it.
 #'
-#' 2. Error in writeSpatialShape(cropshp, savename) x is a NULL object, not a
-#' compatible Spatial*DataFrame.
-#' Ensure that your lats and longs are the the right way around
-#'
-#' 3. If rgdal install fails in Linux try:
+#' 2. If rgdal install fails in Linux try:
 #' sudo apt-get install libgdal-dev && sudo apt-get install libproj-dev"
 #'
-#' 4. Error in as.environment(pos):no item called "package:shapefiles" on the
+#' 3. Error in as.environment(pos):no item called "package:shapefiles" on the
 #' search list: strange error occurring despite shapefiles being coded like all
 #' other packages. Correct output produced regardless.
+#'
+#' 4. subscript out of bounds: can't crop world map to your bounds.
+#' Check lat/lon are the right way around
 #'
 gbm.basemap <- function(bounds = NULL, # region to crop to: c(xmin,xmax,ymin,ymax)
                         grids = NULL, # if bounds unspecified, name your grids database here
@@ -77,31 +73,18 @@ gbm.basemap <- function(bounds = NULL, # region to crop to: c(xmin,xmax,ymin,yma
                         # change to current directory e.g. "/home/me/folder". Do not use getwd() here.
                         savename = "Crop_Map", #shapefile save-name without the .shp
                         res = "CALC", # Resolution, 1:5 (low:high) OR c,l,i,h,f (coarse, low, intermediate, high, full) or "CALC" to calculate based on bounds. Choose one.
-                        extrabounds = FALSE) { # grow bounds 16pct each direction to expand rectangular datasets basemaps over the entire square area created by basemap in mapplots
+                        extrabounds = FALSE, # grow bounds 16pct each direction to expand rectangular datasets basemaps over the entire square area created by basemap in mapplots
+                        returnsf = FALSE) { # Return object as simple features object? Default FALSE, returns as list format for draw.shape in mapplots, used in gbm.map
 
-  #if i don't need rgdal etc i won't need this line either####
-  # if (!require(rgdal)) install.packages("rgdal")
-  #   require(rgdal) # for readOGR
-  # if (!require(rgeos)) install.packages("rgeos")
-  #   require(rgeos) # subfunctions for rgdal & others
-  # if (!require(raster)) install.packages("raster")
-  #   require(raster) # for crop
-  # if (!require(maptools)) install.packages("maptools")
-  #   require(maptools) # for WriteSpatialShape
-  # if (!require(shapefiles)) install.packages("shapefiles")
-  #   require(shapefiles) # for read.shapefile
-  # if (!require(sf)) install.packages("sf")
-  #   require(sf) # for everything after sf/st update, can remove the rest?
-  ###improve these: check if installed, install if not else library####
-
-  # attachNamespace("shapefiles") # else Error in as.environment(pos): no item called "package:shapefiles" on the search list
+  attachNamespace("shapefiles") # else Error in as.environment(pos): no item called "package:shapefiles" on the search list
   # or Error during wrapup: no item called "package:shapefiles" on the search list
   # despite shapefiles being in imports here, in namespace, & in description. Doesn't do this for any other package.
   # But if I include this the line can get run twice, giving the error: "namespace(shapefiles) was already taken."
 
   oldwd <- getwd() # record original directory
   on.exit(setwd(oldwd), add = TRUE) # defensive block, thanks to Gregor Sayer
-  setwd(savedir)
+  sf::sf_use_s2(FALSE) # 2021 addition of s2 code to sf often causes: Error in s2_geography_from_wkb(x, oriented = oriented, check = check):
+  # Evaluation error: Found 1 feature with invalid spherical geometry. Loop 0 is not valid: Edge n has duplicate vertex with edge n2.
   # if bounds is entered it's user below, else check grids & gridslat & gridslon
   if (is.null(bounds)) {
     #check none of grids & gridslat & gridslon is null, if any are print message
@@ -118,11 +101,20 @@ gbm.basemap <- function(bounds = NULL, # region to crop to: c(xmin,xmax,ymin,yma
     xmax = max(grids[,gridslon])
     ymin = min(grids[,gridslat])
     ymax = max(grids[,gridslat])
-  } else {
+  } else { # if bounds not null
     xmin = bounds[1] #for sf/st upgrade
     xmax = bounds[2]
     ymin = bounds[3]
     ymax = bounds[4]
+  }
+
+  if (extrabounds) { # grow bounds extents if requested
+    xmid <- mean(bounds[1:2])
+    ymid <- mean(bounds[3:4])
+    xmax <- ((bounds[2] - xmid) * 1.6) + xmid #updated for sf/st
+    xmin <- xmid - ((xmid - bounds[1]) * 1.6)
+    ymax <- ((bounds[4] - ymid) * 1.6) + ymid
+    ymin <- ymid - ((ymid - bounds[3]) * 1.6)
   }
 
   if (res == 1) res <- "c" # If res provided as number convert to letter
@@ -139,48 +131,33 @@ gbm.basemap <- function(bounds = NULL, # region to crop to: c(xmin,xmax,ymin,yma
     if (29 > scope & scope >= 9) res <- "h"
     if (9 > scope) res <- "f"}
 
-  ifelse(getzip, {# download & unzip GSHGG if getzip = TRUE
-    download.file(paste0("https://www.ngdc.noaa.gov/mgg/shorelines/data/gshhg/latest/gshhg-shp-", zipvers, ".zip"), "GSHHG.zip")
+  # If savedir has a terminal slash, remove it, it's added later
+  if (substr(x = savedir, start = nchar(savedir), stop = nchar(savedir)) == "/") savedir = substr(x = savedir, start = 1, stop = nchar(savedir) - 1)
+
+  ifelse(getzip == TRUE, {# download & unzip GSHGG if getzip = TRUE
+    download.file(url = paste0("https://www.ngdc.noaa.gov/mgg/shorelines/data/gshhg/latest/gshhg-shp-", zipvers, ".zip"),
+                  destfile = paste0(savedir, "/GSHHG.zip")) # need to ensure 1 / between savedir & GSHHG.zip. Done above
+    setwd(savedir)
     unzip("GSHHG.zip")
-    setwd("./GSHHS_shp")}
-    , setwd(getzip)) # else just setwd to there
+    setwd("GSHHS_shp")}
+    , setwd(getzip) # else just setwd to there
+  )
 
   setwd(paste("./", res, sep = "")) #setwd to res subfolder
 
-  if (extrabounds) { # grow bounds extents if requested
-    xmid <- mean(bounds[1:2])
-    ymid <- mean(bounds[3:4])
-    xmax <- ((bounds[2] - xmid) * 1.6) + xmid #updated for sf/st
-    xmin <- xmid - ((xmid - bounds[1]) * 1.6)
-    ymax <- ((bounds[4] - ymid) * 1.6) + ymid
-    ymin <- ymid - ((ymid - bounds[3]) * 1.6)
-  }
-
-  # read in worldmap
-  # world <- readOGR(dsn = paste0("GSHHS_", res, "_L1.shp"), layer = paste0("GSHHS_", res, "_L1"))
-  # world <- gBuffer(world, byid = TRUE, width = 0) # fixes problem in input shapefiles:
-  ## Error in RGEOSBinTopoFunc(spgeom1, spgeom2, byid, id, drop_lower_td, unaryUnion_if_byid_false,
-  ## TopologyException: Input geom 0 is invalid: Self-intersection at or near point (lists points), see
-  ## https://gis.stackexchange.com/questions/163445/getting-topologyexception-input-geom-1-is-invalid-which-is-due-to-self-intersec
-  # cropshp <- crop(world, bounds) # crop to extents
-  # setwd(savedir)
-  # dir.create("CroppedMap") # create conservation maps directory
-  # setwd("CroppedMap")
-  # writeSpatialShape(cropshp, savename)
-  # print(paste("World map cropped and saved successfully"))
-  # cropshp <- read.shapefile(savename) #reads back into env in correct format
-  ## change to cropshp <- read_sf("./CroppedMap/Crop_Map.shp")? Will work for gbm.map etc etc?
-  ## st_crs(cropshp) <- 4326 #need to set crs but won't know what that should be. Could do algorithmically somehow?
-  ## crs will be WGS84 EPSG: 4326 as this is the source worldmap CRS.
-
-  # world <- read_sf(dsn = paste0("GSHHS_", res, "_L1.shp"), layer = paste0("GSHHS_", res, "_L1")) # read in worldmap
-  # read_sf results in a sf tibble which needs tibble installed. st_read is a sf dataframe. Changed also in @importFrom
   world <- st_read(dsn = paste0("GSHHS_", res, "_L1.shp"), layer = paste0("GSHHS_", res, "_L1"), quiet = TRUE) # read in worldmap
   cropshp <- st_crop(world, xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax) # crop to extents
-  setwd(savedir) # setwd to savedir else saves CroppedMap folder in res folder
+  # setwd(savedir) # setwd to savedir else saves CroppedMap folder in res folder
+  setwd("../../") # setwd to savedir else saves CroppedMap folder in res folder
   dir.create("CroppedMap") # create conservation maps directory
   setwd("CroppedMap")
-  st_write(cropshp, dsn = paste0(savename, ".shp"))
-  cropshp <- read.shapefile(savename) # read it back in with read.shapefile which results in the expected format for draw.shape in mapplots, used in gbm.map # shapefiles::
+  st_write(cropshp, dsn = paste0(savename, ".shp"), append = FALSE) # append FALSE overwrites existing files
+
+  if (returnsf) {
+    cropshp <- st_read(dsn = paste0(savename, ".shp"), layer = savename, quiet = TRUE) # read in worldmap
+  } else {
+    cropshp <- shapefiles::read.shapefile(savename) # read it back in with read.shapefile which results in the expected format for draw.shape in mapplots, used in gbm.map # shapefiles::
+  }
+
   print(paste("World map cropped and saved successfully"))
   return(cropshp)}

@@ -4,6 +4,11 @@
 # gbm.auto
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/SimonDedman/gbm.auto/workflows/R-CMD-check--as-cran/badge.svg)](https://github.com/SimonDedman/gbm.auto/actions)
+[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/gbm.auto)](https://cran.r-project.org/package=gbm.auto)
+[![CRAN RStudio mirror
+downloads](https://cranlogs.r-pkg.org/badges/gbm.auto)](https://cran.r-project.org/package=gbm.auto)
 <!-- badges: end -->
 <!-- badgeplacer(location = ".", status = "active", githubaccount = SimonDedman, githubrepo = gbm.auto, branch = master, name = "README.Rmd") -->
 
@@ -23,8 +28,22 @@ frequently contain tips or common bugfixes.
 I strongly recommend that you download papers 1 to 5 (or just the
 doctoral thesis) on <http://www.simondedman.com>, with emphasis on P4
 (the guide) and P1 (statistical background). Elith et al 2008
-(<http://refhub.elsevier.com/S0304-3800(15)00207-0/sbref0085>) is also
-strongly recommended.
+(<https://www.doi.org/10.1111/j.1365-2656.2008.01390.x>) is also
+strongly recommended. Also it’s imperative you read the R help files for
+each function before you use them. In RStudio: Packages tab, scroll to
+gbm.auto, click its name, the click the function to see its man (manual)
+page. Read the whole thing. Function man pages can also be accessed from
+the console by typing
+
+``` r
+?function
+```
+
+Just because you CAN try every conceivable combination of tc, lr, bf,
+all, at once doesn’t mean you should. Try a range of lr in shrinking
+orders of magnitude from 0.1 to 0.000001, find the best, THEN try tc
+c(2, n.expvars), find the best THEN bf c(0.5, 0.75, 0.9) and then in
+between if either outperform 0.5.
 
 ------------------------------------------------------------------------
 
@@ -58,8 +77,8 @@ Creates Basemaps for Gbm.auto mapping from your data range
 
 Downloads unzips crops & saves NOAAs global coastline shapefiles to
 user-set box. Use for ‘shape’ in gbm.map. If downloading in RStudio
-uncheck “Use secure download method for HTTP” in Tools &gt; Global
-Options &gt; Packages.
+uncheck “Use secure download method for HTTP” in Tools \> Global Options
+\> Packages.
 
 ------------------------------------------------------------------------
 
@@ -130,9 +149,37 @@ mapped to spatially demonstrate the output variance range.
 
 ------------------------------------------------------------------------
 
+### gbm.factorplot
+
+ggplot-based update to PDP for factorial/categorical/character
+variables, allows changing order of categorical variables, and changing
+angle of x-axis labels to avoid them being cut off.
+
+------------------------------------------------------------------------
+
+### lmplot
+
+Linear plot of two variables.
+
+------------------------------------------------------------------------
+
+### gbm.lmplots
+
+Loops through lmplots for all expvars (x) against the same resvar (y).
+
+------------------------------------------------------------------------
+
 ### roc & calibration
 
-internal functions authored by Elith & Leathwick, used by gbm.auto.R
+Internal functions authored by Elith & Leathwick, used by gbm.auto.R
+
+------------------------------------------------------------------------
+
+### gbm.step.sd
+
+Local copy of dismo’s gbm.step, with added functions to generate model
+evaluation metrics such as root mean squared error and amount of
+deviance explained relative to null.
 
 ------------------------------------------------------------------------
 
@@ -149,7 +196,7 @@ And the development version from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("SimonDedman/gbm.auto")
+remotes::install_github("SimonDedman/gbm.auto")
 ```
 
 ------------------------------------------------------------------------
