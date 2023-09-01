@@ -61,7 +61,8 @@ legend.grid and draw.grid in mapplots which is c("white", "yellow", "orange"
 \item{colournumber}{Number of colours to spread heatcol over, default:8.}
 
 \item{shape}{Basemap shape to draw, from draw.shape in mapplots. Defaults to
-NULL which calls gbm.basemap to generate it for you.}
+NULL which calls gbm.basemap to generate it for you. First read in a shp file e.g. myshape <-
+shapefiles::read.shapefile("Crop_Map") WITHOUT the .shp extension, then use shape = myshape.}
 
 \item{landcol}{Colour for 'null' area of map (for marine plots, this is
 land), from draw.shape in mapplots. Default "grey80" (light grey).}
@@ -104,13 +105,21 @@ automatically within gbm.auto but can be run alone, and generates
 representativeness surfaces from the output of gbm.rsb.
 }
 \details{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}
+Superseded by gbm.mapsf on 2023-08-07, but still works.
+
 Errors and their origins:
+
 Error in seq.default(xlim[1], xlim[2], by = byx):wrong sign in 'by' argument
 Check that your lat & long columns are the right way around. Ensure grids
-data are gridded.
+data are gridded, i.e. they are in a regular pattern of same/similar lines of lat/lon, even if
+they're missing sections.
+
 Suggested parameter values:
 z = rsbdf[,"Unrepresentativeness"]
+
 mapmain = "Unrepresentativeness: "
+
 legendtitle = "UnRep 0-1"
 }
 \examples{
@@ -126,6 +135,7 @@ gbm.map(x = grids[,"Longitude"], y = grids[,"Latitude"], z = grids[,"Effort"]
 , species = "Effort")
 dev.off()
 }
+
 }
 \author{
 Simon Dedman, \email{simondedman@gmail.com}

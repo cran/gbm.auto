@@ -21,6 +21,7 @@ gbm.auto(
   simp = TRUE,
   gridslat = 2,
   gridslon = 1,
+  samplesGridsAreaScaleFactor = 1,
   multiplot = TRUE,
   cols = grey.colors(1, 1, 1),
   linesfiles = TRUE,
@@ -76,9 +77,7 @@ list(0.01,c(0.001, 0.0005)).}
 \item{bf}{Permutations of bag fraction allowed, can be single number, vector
 or list, per tc and lr. Defaults to 0.5.}
 
-\item{offset}{Column number or quoted name in samples, containing offset values relating to the
-samples. A numeric vector of length equal to the number of cases. Similar to weighting, see
-https://towardsdatascience.com/offsetting-the-model-logic-to-implementation-7e333bc25798 .}
+\item{offset}{Column number or quoted name in samples, containing offset values relating to the}
 
 \item{n.trees}{From gbm.step, number of initial trees to fit. Can be
 single or list but not vector i.e. list(fam1,fam2).}
@@ -86,7 +85,7 @@ single or list but not vector i.e. list(fam1,fam2).}
 \item{ZI}{Are data zero-inflated? TRUE FALSE "CHECK". Choose one. TRUE:
 delta BRT, log-normalised Gaus, reverse log-norm and bias corrected. FALSE:
 do Gaussian only, no log-normalisation. "CHECK": Tests data for you. Default is
- "CHECK". TRUE and FALSE aren't in quotes, "CHECK" is.}
+"CHECK". TRUE and FALSE aren't in quotes, "CHECK" is.}
 
 \item{fam1}{Probability distribution family for 1st part of delta process,
 defaults to "bernoulli". Choose one.}
@@ -100,11 +99,14 @@ defaults to "gaussian". Choose one.}
 
 \item{gridslon}{Column number for longitude in 'grids'.}
 
+\item{samplesGridsAreaScaleFactor}{Scale up or down factor so values in the predict-to pixels of
+'grids' match the spatial scale sampled by rows in 'samples'. Default 1 means no change.}
+
 \item{multiplot}{Create matrix plot of all line files? Default true.
 turn off if big n of exp vars causes an error due to margin size problems.}
 
 \item{cols}{Barplot colour vector. Assignment in order of explanatory
-variables. Default 1*white: white bars black borders. '1*' repeats.}
+variables. Default 1\emph{white: white bars black borders. '1}' repeats.}
 
 \item{linesfiles}{Save individual line plots' data as csv's? Default TRUE.}
 
@@ -116,7 +118,7 @@ current directory e.g. "/home/me/folder". Do not use getwd() here.}
 \item{savegbm}{Save gbm objects and make available in environment after
 running? Open with load("Bin_Best_Model") Default TRUE.}
 
-\item{loadgbm}{Relative or absolute location of folder containing
+\item{loadgbm}{Relative or (very much preferably) absolute location of folder containing
 Bin_Best_Model and Gaus_Best_Model. If set will skip BRT calculations and do
 predicted maps and csvs. Avoids re-running BRT models again (the slow bit),
 can run normally once with savegbm=T then multiple times with new grids &
@@ -128,11 +130,10 @@ Default NULL, character vector, "./" for working directory.}
 
 \item{map}{Save abundance map png files?}
 
-\item{shape}{Set coast shapefile, else bounds calculated by gbm.map which
-then calls gbm.basemap to download and auto-generate the base map. Read in
-existing files by installing the shapefiles package then
-DesiredMapName <- read.shapefile("ShapeFileName")
-omitting the .shp extension.}
+\item{shape}{Enter the full path to downloaded map e.g. coastline shapefile, possibly from
+gbm.basemap, typically Crop_Map.shp, including the .shp. Can also name an existing object in the
+environment, read in with sf::st_read. Default NULL, in which case bounds calculated by gbm.map
+which then calls gbm.basemap to download and auto-generate the base map.}
 
 \item{RSB}{Run Unrepresentativeness surface builder? Default TRUE.}
 
@@ -159,10 +160,9 @@ TRUE.}
 
 \item{Gaus_Preds}{Dummy param for package testing for CRAN, ignore.}
 
-\item{...}{Optional arguments for zero in breaks.grid in gbm.map, legend in
-legend.grid in gbm.map, and gbm.step (dismo package) arguments n.trees and
+\item{...}{Optional arguments for gbm.step (dismo package) arguments n.trees and
 max.trees, both of which can be added in list(1,2) format to pass to fam1 and
- 2.}
+2; for gbm.mapsf colourscale, heatcolours, colournumber, and others.}
 }
 \value{
 Line, dot and bar plots, a report of all variables used, statistics
@@ -184,88 +184,76 @@ and thesis published using this package.
 }
 \details{
 Errors and their origins:
-
-1. install ERROR: dependencies ‘rgdal’, ‘rgeos’ are not available for package ‘gbm.auto’.
+\enumerate{
+\item install ERROR: dependencies ‘rgdal’, ‘rgeos’ are not available for package ‘gbm.auto’.
 For Linux/*buntu systems, in terminal, type: 'sudo apt install libgeos-dev', 'sudo apt install
 libproj-dev', 'sudo apt install libgdal-dev'.
-
-2. Error in FUN(X[[i]], ...) : only defined on a data frame with all numeric
+\item Error in FUN(X[[i]], ...) : only defined on a data frame with all numeric
 variables. Check your variable types are correct, e.g. numerics haven't been imported
 as factors because there's an errant first row of text information before the
 data. Remove NA rows from the response variable if present: convert blank
 cells to NA on import with read.csv(x, na.strings = "") then
-samples2 <- samples1[-which(is.na(samples[,resvar_column_number])),]
-
-3. At bf=0.5, if nrows <= 42 gbm.step will crash. Use gbm.bfcheck to determine optimal viable bf
-size
-
-4. Maps/plots don't work/output. If on a Mac, try changing pngtype to "quartz".
-
-5. Error in while (delta.deviance > tolerance.test AMPERSAND n.fitted <
+samples2 <- samples[-which(is.na(samples[,resvar_column_number])),]
+\item At BF=0.5, if nrows <= 42, gbm.step will crash. Use gbm.bfcheck to determine optimal viable BF
+size.
+\item Maps/plots don't work/output. If on a Mac, try changing pngtype to "quartz".
+\item Error in while (delta.deviance > tolerance.test & n.fitted <
 max.trees): missing value where TRUE/FALSE needed. If running a zero-inflated delta model
 (bernoulli/bin & gaussian/gaus), Data are expected to contain zeroes (lots of them in zero-
 inflated cases), have you already filtered them out, i.e. are only testing the positive cases?
 Or do you only have positive cases? If so only run (e.g.) Gaussian: set ZI to FALSE.
-
-6. Error in round(gbm.object$cv.statistics$deviance.mean, 4) : non-numeric argument to
+\item Error in round(gbm.object$cv.statistics$deviance.mean, 4) : non-numeric argument to
 mathematical function. LR or BF probably too low in earlier BRT (normally Gaus run with highest
-TC)
-
-7. Error in if (n.trees > x$n.trees) { : argument is of length zero}. LR or BF probably too low
+TC).
+\item Error in if (n.trees > x$n.trees) { : argument is of length zero}. LR or BF probably too low
 in earlier BRT (normally Gaus run with highest TC).
-
-8. Error in gbm.fit(x, y, offset = offset, distribution = distribution, w = w) The dataset size
+\item Error in gbm.fit(x, y, offset = offset, distribution = distribution, w = w): The dataset size
 is too small or subsampling rate is too large: nTrain*bag.fraction <= n.minobsinnode. LR or BF
 probably too low in earlier BRT (normally Gaus run with highest TC). It may be that you don't
 have enough positive samples to run BRT modelling. Run gbm.bfcheck to check recommended minimum
 BF size.
-
-9. Warning message: In cor(y_i, u_i) : the standard deviation is zero. LR or BF probably too low
+\item Warning message: In cor(y_i, u_i) : the standard deviation is zero. LR or BF probably too low
 in earlier BRT (normally Gaus run with highest TC). It may be that you don't have enough positive
- samples to run BRT modelling. Run gbm.bfcheck to check recommended minimum BF size. Similarly:
- glm.fit: fitted probabilities numerically 0 or 1 occurred, and glm.fit: algorithm did not
- converge. Similarly: Error in if (get(paste0("Gaus_BRT", ".tc", j, ".lr", k, ".bf",
- l))$self.statistics$correlation[[1]]: argument is of length zero. See also: Error 15.
-
-10. Anomalous values can obfuscate clarity in line plots e.g. salinity range 32:35ppm but dataset
- has errant 0 value: plot axis will be 0:35, and 99.99% of the data will be in the tiny bit at
- the right. Clean your data beforehand.
-
-11. Error in plot.new() : figure margins too large: In RStudio, adjust plot frame (usually bottom
- right) to increase its size. Still fails? Set multiplot=FALSE.
-
-12. Error in dev.print(file = paste0("./", names(samples[i]), "/pred_dev_bin.jpeg"): can only
+samples to run BRT modelling. Run gbm.bfcheck to check recommended minimum BF size. Similarly:
+glm.fit: fitted probabilities numerically 0 or 1 occurred, and glm.fit: algorithm did not
+converge. Similarly: Error in if (get(paste0("Gaus_BRT", ".tc", j, ".lr", k, ".bf",
+l))$self.statistics$correlation[[1]]: argument is of length zero. See also: Error 15.
+\item Anomalous values can obfuscate clarity in line plots e.g. salinity range 32:35ppm but dataset
+has errant 0 value: plot axis will be 0:35, and 99.99\% of the data will be in the tiny bit at
+the right. Clean your data beforehand.
+\item Error in plot.new() : figure margins too large: In RStudio, adjust plot pane (usually bottom
+right) to increase its size. Still fails? Set multiplot=FALSE.
+\item Error in dev.print(file = paste0("./", names(samples[i]), "/pred_dev_bin.jpeg"): can only
 print from a screen device. An earlier failed run (e.g. LR/BF too low) left a plotting device
 open. Close it with: 'dev.off()'.
-
-13. RStudio crashed: set alerts=F and pause cloud sync programs if outputting to a synced folder.
-
-14. Error in grDevices::dev.copy(device = function (filename = "Rplot%03d.jpeg", could not open
-file './P_PECTINATA..../pred_dev_bin.jpeg' (or similar). Your resvar column name contains an
-illegal character e.g. /&'_. Fix with colnames(samples)[n] <- "BetterName".
-
-15. Error in gbm.fit: Poisson requires the response to be a positive integer. If running Poisson
+\item RStudio crashed: set alerts=F and pause cloud sync programs if outputting to a synced folder.
+\item Error in grDevices::dev.copy(device = function (filename = "Rplot\%03d.jpeg", could not open
+file './resvar/pred_dev_bin.jpeg' (or similar). Your resvar column name contains an
+illegal character e.g. /&'_. Fix with colnames(samples)\link{n} <- "BetterName".
+\item Error in gbm.fit: Poisson requires the response to be a positive integer. If running Poisson
 distributions, ensure the response variables are positive integers, but if they are, try a
-smaller learning rate.
-
-16. If lineplots of factorial variables include empty columns be sure to remove unused levels
-with samples %<>% droplevels() before the gbm.auto run
-
-17. Error in seq.default(from = min(x$var.levels[[i.var[i]]]), to = max(x$var.levels[[i.var[i]]])
-:'from' must be a finite number. If you logged any expvars with log() and they has zeroes in them
-, those zeroes became imaginary numbers. Use log1p() instead.
-
-18. Error in loadNamespace...'dismo' 1.3-9 is being loaded, but >= 1.3.10 is required: first do
+smaller LR.
+\item If lineplots of factorial variables include empty columns be sure to remove unused levels
+with samples \%<>\% droplevels() before the gbm.auto run.
+\item Error in seq.default(from = min(x$var.levels[[i.var[i]]]), to =
+max(x$var.levels[[i.var[i]]]):'from' must be a finite number. If you logged any expvars
+with log() and they has zeroes in them, those zeroes became imaginary numbers. Use
+log1p() instead.
+\item Error in loadNamespace...'dismo' 1.3-9 is being loaded, but >= 1.3.10 is required: first do
 remotes::install_github("rspatial/dismo") then library(dismo).
+}
+
+ALSO: check this section in the other functions run by gbm.auto e.g. gbm.map, gbm.basemap. Use
+traceback() to find the source of errors.
 
 I strongly recommend that you download papers 1 to 5 (or just the doctoral thesis) on
-<http://www.simondedman.com>, with emphasis on P4 (the guide) and P1 (statistical background).
-Elith et al 2008 (<http://refhub.elsevier.com/S0304-3800(15)00207-0/sbref0085>) is also strongly
+\url{http://www.simondedman.com}, with emphasis on P4 (the guide) and P1 (statistical background).
+Elith et al 2008 (\url{http://refhub.elsevier.com/S0304-3800(15)00207-0/sbref0085}) is also strongly
 recommended.
 Just because you CAN try every conceivable combination of tc, lr, bf, all, at once doesn't mean
 you should. Try a range of lr in shrinking orders of magnitude from 0.1 to 0.000001, find the
 best, THEN try tc c(2, n.expvars), find the best THEN bf c(0.5, 0.75, 0.9) and then in between if
- either outperform 0.5.
+either outperform 0.5.
 }
 \examples{
 \donttest{

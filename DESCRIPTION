@@ -1,10 +1,7 @@
 Package: gbm.auto
 Title: Automated Boosted Regression Tree Modelling and Mapping Suite
-Version: 2023.06.13
-Authors@R: c(
-    person("Simon", "Dedman", , "simondedman@gmail.com", role = c("aut", "cre")),
-    person("Hans", "Gerritsen", role = "aut")
-  )
+Version: 2023.08.31
+Authors@R: person("Simon", "Dedman", , "simondedman@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-9108-972X"))
 Description: Automates delta log-normal boosted regression tree abundance
     prediction. Loops through parameters provided (LR (learning rate), TC
     (tree complexity), BF (bag fraction)), chooses best, simplifies, &
@@ -21,16 +18,18 @@ Description: Automates delta log-normal boosted regression tree abundance
 License: MIT + file LICENSE
 Depends: R (>= 3.5.0)
 Imports: beepr (>= 1.2), dismo (>= 1.3-14), dplyr (>= 1.0.9), gbm (>=
-        2.1.1), mapplots (>= 1.5), Metrics (>= 0.1.4), sf (>= 0.9-7),
-        shapefiles (>= 0.7), stats (>= 3.3.1), stringi (>= 1.6.1)
+        2.1.1), ggmap (>= 3.0.2), ggplot2 (>= 3.4.2), ggspatial (>=
+        1.1.9), lifecycle, lubridate (>= 1.9.2), mapplots (>= 1.5),
+        Metrics (>= 0.1.4), readr (>= 2.1.4), sf (>= 0.9-7), stars (>=
+        0.6-3), starsExtra (>= 0.2.7), stats (>= 3.3.1), stringi (>=
+        1.6.1), tidyselect (>= 1.2.0), viridis (>= 0.6.4)
 Encoding: UTF-8
 Language: en-GB
 LazyData: true
 RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2023-06-13 23:59:10 UTC; simon
-Author: Simon Dedman [aut, cre],
-  Hans Gerritsen [aut]
+Packaged: 2023-09-01 16:02:00 UTC; simon
+Author: Simon Dedman [aut, cre] (<https://orcid.org/0000-0002-9108-972X>)
 Maintainer: Simon Dedman <simondedman@gmail.com>
 Repository: CRAN
-Date/Publication: 2023-06-14 07:40:02 UTC
+Date/Publication: 2023-09-01 17:00:03 UTC
