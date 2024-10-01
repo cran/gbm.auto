@@ -35,8 +35,8 @@
 #' @param bf Permutations of bag fraction allowed, can be single number, vector
 #' or list, per tc and lr. Defaults to 0.5.
 #' @param offset Column number or quoted name in samples, containing offset values relating to the
-# samples. A numeric vector of length equal to the number of cases. Similar to weighting, see
-# https://towardsdatascience.com/offsetting-the-model-logic-to-implementation-7e333bc25798 .
+#' samples. A numeric vector of length equal to the number of cases. Similar to weighting, see
+#' https://towardsdatascience.com/offsetting-the-model-logic-to-implementation-7e333bc25798 .
 #' @param n.trees From gbm.step, number of initial trees to fit. Can be
 #' single or list but not vector i.e. list(fam1,fam2).
 #' @param ZI Are data zero-inflated? TRUE FALSE "CHECK". Choose one. TRUE:
@@ -73,7 +73,7 @@
 #' @param map Save abundance map png files?
 #' @param shape Enter the full path to downloaded map e.g. coastline shapefile, possibly from
 #' gbm.basemap, typically Crop_Map.shp, including the .shp. Can also name an existing object in the
-#'  environment, read in with sf::st_read. Default NULL, in which case bounds calculated by gbm.map
+#'  environment, read in with sf::st_read. Default NULL, in which case bounds calculated by gbm.mapsf
 #'  which then calls gbm.basemap to download and auto-generate the base map.
 #' @param RSB Run Unrepresentativeness surface builder? Default TRUE.
 #' @param BnW Repeat maps in black and white e.g. for print journals. Default
@@ -127,7 +127,7 @@
 #' mathematical function. LR or BF probably too low in earlier BRT (normally Gaus run with highest
 #' TC).
 #'
-#' 7. Error in if (n.trees > x$n.trees) { : argument is of length zero}. LR or BF probably too low
+#' 7. Error in if (n.trees > x$n.trees) argument is of length zero. LR or BF probably too low
 #' in earlier BRT (normally Gaus run with highest TC).
 #'
 #' 8. Error in gbm.fit(x, y, offset = offset, distribution = distribution, w = w): The dataset size
@@ -158,7 +158,7 @@
 #'
 #' 14. Error in grDevices::dev.copy(device = function (filename = "Rplot%03d.jpeg", could not open
 #' file './resvar/pred_dev_bin.jpeg' (or similar). Your resvar column name contains an
-#' illegal character e.g. /&'_. Fix with colnames(samples)[n] <- "BetterName".
+#' illegal character e.g. /&'_. Fix with colnames(samples)\[n\] <- "BetterName".
 #'
 #' 15. Error in gbm.fit: Poisson requires the response to be a positive integer. If running Poisson
 #' distributions, ensure the response variables are positive integers, but if they are, try a
@@ -175,12 +175,15 @@
 #' 18. Error in loadNamespace...'dismo' 1.3-9 is being loaded, but >= 1.3.10 is required: first do
 #' remotes::install_github("rspatial/dismo") then library(dismo).
 #'
-#' ALSO: check this section in the other functions run by gbm.auto e.g. gbm.map, gbm.basemap. Use
+#' 19. Error in if (scope >= 160) res <- "c" : missing value where TRUE/FALSE needed. Check gridslat
+#'  and gridslon are indexing the correct columns in grids.
+#'
+#' ALSO: check this section in the other functions run by gbm.auto e.g. gbm.mapsf, gbm.basemap. Use
 #' traceback() to find the source of errors.
 #'
 #' I strongly recommend that you download papers 1 to 5 (or just the doctoral thesis) on
 #' <http://www.simondedman.com>, with emphasis on P4 (the guide) and P1 (statistical background).
-#' Elith et al 2008 (<http://refhub.elsevier.com/S0304-3800(15)00207-0/sbref0085>) is also strongly
+#' Elith et al 2008 (<https://besjournals.onlinelibrary.wiley.com/doi/10.1111/j.1365-2656.2008.01390.x>) is also strongly
 #' recommended.
 #' Just because you CAN try every conceivable combination of tc, lr, bf, all, at once doesn't mean
 #' you should. Try a range of lr in shrinking orders of magnitude from 0.1 to 0.000001, find the
@@ -274,7 +277,7 @@ gbm.auto <- function(
     varint = TRUE,        # calculate variable interactions? Default:TRUE, FALSE
     # for error "contrasts can be applied only to factors with 2 or more levels"
     map = TRUE,           # save abundance map png files?
-    shape = NULL,         # set coast shapefile, else bounds calculated by gbm.map
+    shape = NULL,         # set coast shapefile, else bounds calculated by gbm.mapsf
     # which then calls gbm.basemap to download and auto-generate the base map.
     RSB = TRUE,           # run Unrepresentativeness surface builder?
     BnW = TRUE,           # repeat maps in black and white e.g. for print journals
@@ -288,8 +291,8 @@ gbm.auto <- function(
     grv = NULL, # addresses devtools::check's no visible binding for global variable https://cran.r-project.org/web/packages/data.table/vignettes/datatable-importing.html#globals
     Bin_Preds = NULL, # addresses devtools::check's no visible binding for global variable https://cran.r-project.org/web/packages/data.table/vignettes/datatable-importing.html#globals
     Gaus_Preds = NULL, # addresses devtools::check's no visible binding for global variable https://cran.r-project.org/web/packages/data.table/vignettes/datatable-importing.html#globals
-    ...)                  # Optional arguments for zero in breaks.grid in gbm.map,
-# legend in legend.grid in gbm.map, mapmain in gbm.map
+    ...)                  # Optional arguments for zero in breaks.grid in gbm.mapsf,
+# legend in legend.grid in gbm.mapsf, mapmain in gbm.map
 # (default = "Predicted CPUE (numbers per hour): ") and gbm.step (dismo package)
 # arguments max.trees and others.
 {
@@ -307,7 +310,7 @@ gbm.auto <- function(
   # predicted abundance maps, and Unrepresentativeness surfaces.
   #
   # Underlying functions are from packages gbm and dismo, functions from Elith
-  # et al. 2008 (bundled as gbm.utils.R), mapplots, and my own functions gbm.map,
+  # et al. 2008 (bundled as gbm.utils.R), mapplots, and my own functions gbm.mapsf,
   # gbm.rsb, gbm.valuemap, gbm.cons, gbm.basemap
 
   ####1. Check packages, start loop####
@@ -1861,6 +1864,9 @@ gbm.auto <- function(
           #         ...)  # allows gbm.auto's optional terms to be passed to subfunctions:
           # # byx, byy, mapmain, heatcol, mapback, landcol, lejback, legendloc, grdfun, zero, quantile, heatcolours, colournumber
           # dev.off()
+
+          # BUG: stamen autozoom####
+          # Error in if (zoom == "auto" && location_type == "bbox") { : missing value where TRUE/FALSE needed
 
           gbm.mapsf(predabund = grids[c(gridslat, gridslon, predabund)],
                     # predabundlon = 2, # Longitude column number.

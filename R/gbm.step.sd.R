@@ -43,6 +43,10 @@
 #'  fits a model with this number of trees, returning it as a gbm model along with additional
 #'  information from the cv selection process.
 #'
+#'  D squared is 1 - (cv.dev / total.deviance). Abeare thesis: For each of the
+#'  fitted models, the pseudo-R2, or D2, or Explained Deviance, was calculated
+#'  for comparison, where: D2 = 1 – (residual deviance/total deviance).
+#'
 #' requires gbm library from Cran
 #' requires roc and calibration scripts of J Elith
 #' requires calc.deviance script of J Elith/J Leathwick
@@ -595,7 +599,7 @@ gbm.step.sd <- function(
 
   cv.stats <- list(deviance.mean = cv.dev,
                    deviance.se = cv.dev.se,
-                   d.squared = 1 - (cv.dev / total.deviance),
+                   d.squared = 1 - (cv.dev / total.deviance), # SD addition
                    correlation.mean = cv.cor,
                    correlation.se = cv.cor.se,
                    cv.rmse = cv.rmse,

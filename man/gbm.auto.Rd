@@ -77,7 +77,9 @@ list(0.01,c(0.001, 0.0005)).}
 \item{bf}{Permutations of bag fraction allowed, can be single number, vector
 or list, per tc and lr. Defaults to 0.5.}
 
-\item{offset}{Column number or quoted name in samples, containing offset values relating to the}
+\item{offset}{Column number or quoted name in samples, containing offset values relating to the
+samples. A numeric vector of length equal to the number of cases. Similar to weighting, see
+https://towardsdatascience.com/offsetting-the-model-logic-to-implementation-7e333bc25798 .}
 
 \item{n.trees}{From gbm.step, number of initial trees to fit. Can be
 single or list but not vector i.e. list(fam1,fam2).}
@@ -132,7 +134,7 @@ Default NULL, character vector, "./" for working directory.}
 
 \item{shape}{Enter the full path to downloaded map e.g. coastline shapefile, possibly from
 gbm.basemap, typically Crop_Map.shp, including the .shp. Can also name an existing object in the
-environment, read in with sf::st_read. Default NULL, in which case bounds calculated by gbm.map
+environment, read in with sf::st_read. Default NULL, in which case bounds calculated by gbm.mapsf
 which then calls gbm.basemap to download and auto-generate the base map.}
 
 \item{RSB}{Run Unrepresentativeness surface builder? Default TRUE.}
@@ -205,7 +207,7 @@ Or do you only have positive cases? If so only run (e.g.) Gaussian: set ZI to FA
 \item Error in round(gbm.object$cv.statistics$deviance.mean, 4) : non-numeric argument to
 mathematical function. LR or BF probably too low in earlier BRT (normally Gaus run with highest
 TC).
-\item Error in if (n.trees > x$n.trees) { : argument is of length zero}. LR or BF probably too low
+\item Error in if (n.trees > x$n.trees) argument is of length zero. LR or BF probably too low
 in earlier BRT (normally Gaus run with highest TC).
 \item Error in gbm.fit(x, y, offset = offset, distribution = distribution, w = w): The dataset size
 is too small or subsampling rate is too large: nTrain*bag.fraction <= n.minobsinnode. LR or BF
@@ -229,7 +231,7 @@ open. Close it with: 'dev.off()'.
 \item RStudio crashed: set alerts=F and pause cloud sync programs if outputting to a synced folder.
 \item Error in grDevices::dev.copy(device = function (filename = "Rplot\%03d.jpeg", could not open
 file './resvar/pred_dev_bin.jpeg' (or similar). Your resvar column name contains an
-illegal character e.g. /&'_. Fix with colnames(samples)\link{n} <- "BetterName".
+illegal character e.g. /&'_. Fix with colnames(samples)[n] <- "BetterName".
 \item Error in gbm.fit: Poisson requires the response to be a positive integer. If running Poisson
 distributions, ensure the response variables are positive integers, but if they are, try a
 smaller LR.
@@ -241,14 +243,16 @@ with log() and they has zeroes in them, those zeroes became imaginary numbers. U
 log1p() instead.
 \item Error in loadNamespace...'dismo' 1.3-9 is being loaded, but >= 1.3.10 is required: first do
 remotes::install_github("rspatial/dismo") then library(dismo).
+\item Error in if (scope >= 160) res <- "c" : missing value where TRUE/FALSE needed. Check gridslat
+and gridslon are indexing the correct columns in grids.
 }
 
-ALSO: check this section in the other functions run by gbm.auto e.g. gbm.map, gbm.basemap. Use
+ALSO: check this section in the other functions run by gbm.auto e.g. gbm.mapsf, gbm.basemap. Use
 traceback() to find the source of errors.
 
 I strongly recommend that you download papers 1 to 5 (or just the doctoral thesis) on
 \url{http://www.simondedman.com}, with emphasis on P4 (the guide) and P1 (statistical background).
-Elith et al 2008 (\url{http://refhub.elsevier.com/S0304-3800(15)00207-0/sbref0085}) is also strongly
+Elith et al 2008 (\url{https://besjournals.onlinelibrary.wiley.com/doi/10.1111/j.1365-2656.2008.01390.x}) is also strongly
 recommended.
 Just because you CAN try every conceivable combination of tc, lr, bf, all, at once doesn't mean
 you should. Try a range of lr in shrinking orders of magnitude from 0.1 to 0.000001, find the
